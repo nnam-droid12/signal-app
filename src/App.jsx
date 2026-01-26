@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, Copy, Check, Volume2, AlertCircle, HelpCircle, Lightbulb } from "lucide-react";
+import {
+  X,
+  Copy,
+  Check,
+  Volume2,
+  AlertCircle,
+  HelpCircle,
+  Lightbulb,
+} from "lucide-react";
 import { useSignalConnection } from "./hooks/useSignalConnection2";
+import { GestureController } from "./components/GestureController";
+import { toast, Toaster } from "react-hot-toast";
 
 const SignalModal = ({ signal, onClose, onCopy }) => {
   const [copied, setCopied] = useState(false);
@@ -19,7 +29,7 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
           iconBg: "bg-blue-500",
           borderColor: "border-blue-500",
           accentColor: "text-blue-400",
-          label: "Decision Point"
+          label: "Decision Point",
         };
       case "RISK_DETECTED":
         return {
@@ -27,7 +37,7 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
           iconBg: "bg-amber-500",
           borderColor: "border-amber-500",
           accentColor: "text-amber-400",
-          label: "Risk Alert"
+          label: "Risk Alert",
         };
       case "INPUT_REQUIRED":
         return {
@@ -35,7 +45,7 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
           iconBg: "bg-emerald-500",
           borderColor: "border-emerald-500",
           accentColor: "text-emerald-400",
-          label: "Input Needed"
+          label: "Input Needed",
         };
       default:
         return {
@@ -43,7 +53,7 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
           iconBg: "bg-gray-500",
           borderColor: "border-gray-500",
           accentColor: "text-gray-400",
-          label: "Signal"
+          label: "Signal",
         };
     }
   };
@@ -55,7 +65,9 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-700 animate-slideUp">
         {/* Header */}
-        <div className={`flex items-center justify-between p-6 border-b ${config.borderColor} border-opacity-30`}>
+        <div
+          className={`flex items-center justify-between p-6 border-b ${config.borderColor} border-opacity-30`}
+        >
           <div className="flex items-center gap-3">
             <div className={`${config.iconBg} p-2.5 rounded-lg`}>
               <Icon className="w-5 h-5 text-white" />
@@ -93,7 +105,9 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
 
           {/* Description */}
           <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-            <p className="text-sm font-medium text-slate-300 mb-2">What's happening:</p>
+            <p className="text-sm font-medium text-slate-300 mb-2">
+              What's happening:
+            </p>
             <p className="text-slate-200 leading-relaxed">
               {signal.description}
             </p>
@@ -107,18 +121,18 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
                   💡 AI Suggested Response:
                 </p>
               </div>
-              
+
               <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg p-4 border border-slate-600">
                 <p className="text-white leading-relaxed mb-4 pr-8">
                   "{signal.suggestedResponse}"
                 </p>
-                
+
                 <button
                   onClick={handleCopy}
                   className={`absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     copied
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-blue-600 hover:bg-blue-500 text-white'
+                      ? "bg-emerald-600 text-white"
+                      : "bg-blue-600 hover:bg-blue-500 text-white"
                   }`}
                 >
                   {copied ? (
@@ -150,16 +164,19 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
 };
 
 function App() {
-  const {
-    connect,
-    startListening,
-    stopListening,
-    signals,
-    status,
-  } = useSignalConnection();
+  const { connect, startListening, stopListening, signals, status } =
+    useSignalConnection();
 
   const [currentSignal, setCurrentSignal] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [latestSuggestion, setLatestSuggestion] = useState(null);
+
+  // Update latest suggestion when new signals arrive
+  useEffect(() => {
+    if (signals.length > 0 && signals[0].suggestedResponse) {
+      setLatestSuggestion(signals[0].suggestedResponse);
+    }
+  }, [signals]);
 
   // Show modal when new signal arrives
   useEffect(() => {
@@ -174,8 +191,46 @@ function App() {
     navigator.clipboard.writeText(text);
   };
 
+  const handleGesture = (command) => {
+    if (command === "COPY_RESPONSE" && latestSuggestion) {
+      // 1. Copy to Clipboard
+      navigator.clipboard.writeText(latestSuggestion);
+
+      // 2. Play "Success" Sound (Accessibility)
+      new Audio("/success.mp3").play().catch(() => null);
+
+      // 3. Show "Wow" Visual Feedback
+      toast.custom(
+        (t) => (
+          <div
+            className={`${t.visible ? "animate-enter" : "animate-leave"} 
+              max-w-md w-full bg-blue-600 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+          >
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <span className="text-3xl">👍</span>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-white">
+                    Response Copied!
+                  </p>
+                  <p className="mt-1 text-sm text-blue-100">
+                    Ready to paste into chat.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+        { duration: 2000 },
+      );
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 min-h-screen text-white font-sans">
+       <Toaster position="top-center" />
       {/* HEADER */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-6 py-4">
@@ -191,23 +246,33 @@ function App() {
                 )}
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white">Meeting Co-Pilot</h1>
-                <p className="text-xs text-slate-400">AI-Powered Meeting Assistant</p>
+                <h1 className="text-lg font-bold text-white">
+                  Meeting Co-Pilot
+                </h1>
+                <p className="text-xs text-slate-400">
+                  AI-Powered Meeting Assistant
+                </p>
               </div>
             </div>
 
             {/* Status & Controls */}
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-full">
-                <div className={`w-2 h-2 rounded-full ${
-                  status === "LISTENING" ? "bg-emerald-500 animate-pulse" :
-                  status === "CONNECTED" ? "bg-blue-500" :
-                  "bg-slate-500"
-                }`}></div>
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    status === "LISTENING"
+                      ? "bg-emerald-500 animate-pulse"
+                      : status === "CONNECTED"
+                        ? "bg-blue-500"
+                        : "bg-slate-500"
+                  }`}
+                ></div>
                 <span className="text-xs font-medium text-slate-300">
-                  {status === "LISTENING" ? "Active" :
-                   status === "CONNECTED" ? "Ready" :
-                   "Offline"}
+                  {status === "LISTENING"
+                    ? "Active"
+                    : status === "CONNECTED"
+                      ? "Ready"
+                      : "Offline"}
                 </span>
               </div>
 
@@ -252,7 +317,8 @@ function App() {
             </div>
             <h2 className="text-6xl  mb-2">Welcome to Meeting Co-Pilot</h2>
             <p className="text-slate-400 max-w-md mx-auto">
-              Connect to start receiving real-time meeting insights, important decisions, and AI-powered response suggestions.
+              Connect to start receiving real-time meeting insights, important
+              decisions, and AI-powered response suggestions.
             </p>
           </div>
         )}
@@ -264,7 +330,8 @@ function App() {
             </div>
             <h2 className="text-2xl font-bold mb-2">Ready to Listen</h2>
             <p className="text-slate-400 max-w-md mx-auto">
-              Click "Start Listening" to begin monitoring your meeting for important moments.
+              Click "Start Listening" to begin monitoring your meeting for
+              important moments.
             </p>
           </div>
         )}
@@ -276,7 +343,8 @@ function App() {
             </div>
             <h2 className="text-2xl font-bold mb-2">Listening to Meeting</h2>
             <p className="text-slate-400 max-w-md mx-auto mb-6">
-              Actively monitoring for decisions, risks, and questions that need your input.
+              Actively monitoring for decisions, risks, and questions that need
+              your input.
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -289,17 +357,21 @@ function App() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Signal History</h2>
-              <span className="text-sm text-slate-400">{signals.length} signal{signals.length !== 1 ? 's' : ''} detected</span>
+              <span className="text-sm text-slate-400">
+                {signals.length} signal{signals.length !== 1 ? "s" : ""}{" "}
+                detected
+              </span>
             </div>
-            
+
             <div className="grid gap-3">
               {signals.map((signal, index) => {
-                const config = signal.type === "DECISION_POINT" ? 
-                  { color: "blue", label: "Decision" } :
-                  signal.type === "RISK_DETECTED" ?
-                  { color: "amber", label: "Risk" } :
-                  { color: "emerald", label: "Input" };
-                
+                const config =
+                  signal.type === "DECISION_POINT"
+                    ? { color: "blue", label: "Decision" }
+                    : signal.type === "RISK_DETECTED"
+                      ? { color: "amber", label: "Risk" }
+                      : { color: "emerald", label: "Input" };
+
                 return (
                   <button
                     key={index}
@@ -312,7 +384,9 @@ function App() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-xs font-semibold text-${config.color}-400`}>
+                          <span
+                            className={`text-xs font-semibold text-${config.color}-400`}
+                          >
                             {config.label}
                           </span>
                           <span className="text-xs text-slate-500">
@@ -342,6 +416,12 @@ function App() {
           onClose={() => setShowModal(false)}
           onCopy={handleCopyResponse}
         />
+      )}
+
+      {/* GESTURE OVERLAY (Bottom Right) */}
+      {status === "LISTENING" && (
+        <GestureController onGesture={handleGesture}    
+        isReady={!!latestSuggestion} /> // Only show "👍 Copy" prompt if there is text to copy />
       )}
 
       <style>{`
