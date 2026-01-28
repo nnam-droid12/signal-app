@@ -12,13 +12,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Component
@@ -29,6 +29,7 @@ public class SignalSocketHandler extends TextWebSocketHandler {
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final Client geminiClient;
     private final SignalBoardService signalBoardService;
+    private final AtomicLong lastDiagramTime = new AtomicLong(0);
 
     @Value("${google.cloud.project-id}")
     private String projectId;
@@ -175,21 +176,27 @@ public class SignalSocketHandler extends TextWebSocketHandler {
                 if (signal.getType() != SignalResponse.SignalType.IDLE) {
                     signal.setTimestamp(Instant.now());
 
-                    // 1. Send the Text Signal first (Fast)
                     sendSignal(session, signal);
 
-                    // 2. Check for "Architecture Board" Trigger (The Creative Autopilot)
                     if (signal.getType() == SignalResponse.SignalType.DECISION_POINT) {
 
                         String desc = signal.getDescription().toLowerCase();
 
-                        // Trigger if the conversation is about structure/design
                         if (desc.contains("architecture") || desc.contains("design") ||
                                 desc.contains("structure") || desc.contains("flow") || desc.contains("diagram")) {
 
-                            log.info("Triggering Nano Banana Pro for: " + desc);
+                            long now = System.currentTimeMillis();
 
-                            signalBoardService.generateDiagram(session, signal.getDescription());
+
+                            if (now - lastDiagramTime.get() > 15000) {
+                                lastDiagramTime.set(now);
+
+                                log.info("Triggering Nano Banana Pro (Single Call)...");
+                                signalBoardService.generateDiagram(session, signal.getDescription());
+
+                            } else {
+                                log.info("Skipping duplicate trigger (Cooldown active)");
+                            }
                         }
                     }
                 }

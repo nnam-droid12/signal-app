@@ -58,7 +58,12 @@ public class SignalBoardService {
                         config
                 );
 
-                if (extractAndSendImage(session, response)) return;
+                boolean sent = extractAndSendImage(session, response);
+
+                if (sent) {
+                    log.info("Image Sent successfully on attempt " + attempt + ". Stopping retries.");
+                    return;
+                }
 
             } catch (Exception e) {
                 if (e.getMessage().contains("429") || e.getMessage().contains("Resource exhausted")) {

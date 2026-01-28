@@ -14,3 +14,4 @@ server:
   port: 8080
   tomcat:
     connection-timeout: 600000
+
