@@ -278,7 +278,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-white">
-                  Meeting Co-Pilot
+                  Signal
                 </h1>
                 <p className="text-xs text-slate-400">
                   AI-Powered Meeting Assistant
@@ -346,7 +346,7 @@ function App() {
             <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Volume2 className="w-8 h-8 text-blue-400" />
             </div>
-            <h2 className="text-6xl  mb-2">Welcome to Meeting Co-Pilot</h2>
+            <h2 className="text-6xl  mb-2">Welcome to Signal</h2>
             <p className="text-slate-400 max-w-md mx-auto">
               Connect to start receiving real-time meeting insights, important
               decisions, and AI-powered response suggestions.
