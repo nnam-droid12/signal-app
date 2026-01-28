@@ -23,7 +23,7 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
   };
 
   const getSignalConfig = () => {
-    switch (signal.type) {
+    switch (signal?.type) {
       case "DECISION_POINT":
         return {
           icon: Lightbulb,
@@ -78,11 +78,11 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
                 {config.label}
               </span>
               <span className="text-xs text-slate-400">
-                • {Math.round(signal.confidence * 100)}% confidence
+                • {Math.round(signal?.confidence * 100)}% confidence
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {new Date(signal.timestamp).toLocaleTimeString()}
+              {new Date(signal?.timestamp).toLocaleTimeString()}
             </p>
           </div>
         </div>
@@ -99,7 +99,7 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
         {/* Title */}
         <div>
           <h2 className="text-xl font-semibold text-white leading-tight">
-            {signal.title}
+            {signal?.title}
           </h2>
         </div>
 
@@ -108,11 +108,11 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
           <p className="text-sm font-medium text-slate-300 mb-2">
             What's happening:
           </p>
-          <p className="text-slate-200 leading-relaxed">{signal.description}</p>
+          <p className="text-slate-200 leading-relaxed">{signal?.description}</p>
         </div>
 
         {/* Suggested Response */}
-        {signal.suggestedResponse && (
+        {signal?.suggestedResponse && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-slate-300">
@@ -161,33 +161,36 @@ const SignalModal = ({ signal, onClose, onCopy }) => {
 };
 
 function App() {
-//   const defaultSignals = [
-//   {
-//     type: "DECISION_POINT",
-//     title: "Decide on Project Budget",
-//     description: "The team needs to finalize the budget for Q1.",
-//     suggestedResponse: "Approve $50,000 budget for Q1.",
-//     confidence: 0.85,
-//     timestamp: Date.now() - 60000,
-//   },
-//   {
-//     type: "RISK_DETECTED",
-//     title: "Potential Delay in Delivery",
-//     description: "Supplier might deliver components late.",
-//     suggestedResponse: "Follow up with supplier immediately.",
-//     confidence: 0.78,
-//     timestamp: Date.now() - 30000,
-//   },
-//   {
-//     type: "IMAGE_GENERATED",
-//     title: "Visual Diagram Generated",
-//     description: "System generated a diagram based on discussion.",
-//     suggestedResponse: "Share diagram with team.",
-//     confidence: 0.92,
-//     timestamp: Date.now(),
-//     imageBase64: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..." // sample base64
-//   }
-// ];
+    const [currentSignal, setCurrentSignal] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [latestSuggestion, setLatestSuggestion] = useState(null);
+  const [currentSignalIndex, setCurrentSignalIndex] = useState(null);
+//  const [signals, setSignals] = useState([]);
+//   const [status, setStatus] = useState("LISTENING"); // simulate listening
+//   const [currentSignalIndex, setCurrentSignalIndex] = useState(0);
+//   const [showModal, setShowModal] = useState(true);
+//   const [latestSuggestion, setLatestSuggestion] = useState();
+
+  // useEffect(() => {
+  // const interval = setInterval(async () => {
+  //   const res = await fetch("http://localhost:5000/api/next-signal");
+  //   const data = await res.json();
+  //   console.log("Polled data:", data);
+  //   if (data.signal) {
+  //     setSignals((prev) => [data.signal, ...prev]);
+  //     // setCurrentSignalIndex(prev => prev.length); // always show newest
+  //     // setShowModal(true);
+  //   //   const newestIndex = signals.length - 1;
+  //   // setCurrentSignalIndex(newestIndex);
+  //   // setCurrentSignal(signals[newestIndex]);
+  //   setShowModal(true);
+  //     setLatestSuggestion(data.signal.suggestedResponse);
+  //   }
+  //   // console.log("Polled for new signal:", data);
+  // }, 5000); // every 5 seconds
+
+//   return () => clearInterval(interval);
+// }, []);
 
   const { connect, startListening, stopListening, 
     signals, 
@@ -195,17 +198,7 @@ function App() {
   } =
     useSignalConnection();
 
-  const [currentSignal, setCurrentSignal] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [latestSuggestion, setLatestSuggestion] = useState(null);
-  const [currentSignalIndex, setCurrentSignalIndex] = useState(null);
-//  const [signals, setSignals] = useState(defaultSignals);
-//   const [status, setStatus] = useState("LISTENING"); // simulate listening
-//   const [currentSignalIndex, setCurrentSignalIndex] = useState(0);
-//   const [showModal, setShowModal] = useState(true);
-//   const [latestSuggestion, setLatestSuggestion] = useState(
-//     defaultSignals[0].suggestedResponse
-//   );
+
 
   // Update latest suggestion when new signals arrive
   useEffect(() => {
@@ -223,8 +216,6 @@ function App() {
     setShowModal(true);
   }
 }, [signals]);
-
-
 
 
   const handleCopyResponse = (text) => {
@@ -287,7 +278,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-white">
-                  Signal
+                  Meeting Co-Pilot
                 </h1>
                 <p className="text-xs text-slate-400">
                   AI-Powered Meeting Assistant
@@ -355,7 +346,7 @@ function App() {
             <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Volume2 className="w-8 h-8 text-blue-400" />
             </div>
-            <h2 className="text-6xl  mb-2">Welcome to Signal</h2>
+            <h2 className="text-6xl  mb-2">Welcome to Meeting Co-Pilot</h2>
             <p className="text-slate-400 max-w-md mx-auto">
               Connect to start receiving real-time meeting insights, important
               decisions, and AI-powered response suggestions.
@@ -469,13 +460,13 @@ function App() {
         const prevIndex = currentSignalIndex - 1;
 
         const signalAtLeft =
-          current.type === "IMAGE_GENERATED" && prevIndex >= 0
+          current?.type === "IMAGE_GENERATED" && prevIndex >= 0
             ? signals[prevIndex]   // previous signal
             : current;             // otherwise show current
 
         return (
           <SignalModal
-            key={signalAtLeft.timestamp}
+            key={signalAtLeft?.timestamp}
             signal={signalAtLeft}
             onClose={() => setShowModal(false)}
             onCopy={handleCopyResponse}
@@ -484,12 +475,12 @@ function App() {
       })()}
 
       {/* RIGHT — Show image only if newest signal is IMAGE_GENERATED */}
-      {signals[currentSignalIndex].type === "IMAGE_GENERATED" &&
-        signals[currentSignalIndex].imageBase64 && (
+      {signals[currentSignalIndex]?.type === "IMAGE_GENERATED" &&
+        signals[currentSignalIndex]?.imageBase64 && (
           <ShowImage
-            key={signals[currentSignalIndex].timestamp}
-            imageBase64={signals[currentSignalIndex].imageBase64}
-            timestamp={signals[currentSignalIndex].timestamp}
+            key={signals[currentSignalIndex]?.timestamp}
+            imageBase64={signals[currentSignalIndex]?.imageBase64}
+            timestamp={signals[currentSignalIndex]?.timestamp}
             onClose={() => setShowModal(false)}
           />
         )}

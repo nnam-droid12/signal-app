@@ -36,7 +36,7 @@ export const useSignalConnection = () => {
         //   console.log("📩 Signal Receivedddddd:", event);
           console.log("🚨 SIGNAL RECEIVED:", data);
           // Add new signal to top of list
-          setSignals((prev) => [data, ...prev]);
+          setSignals((prev) => [...prev, data]);
 
           // Optional: Play a subtle notification sound for "INPUT_REQUIRED"
           if (data.type === "INPUT_REQUIRED") {
