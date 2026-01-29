@@ -5,6 +5,7 @@ import com.google.genai.Client;
 import com.google.genai.types.*;
 import com.signal.Signal.dto.SignalResponse;
 import com.signal.Signal.service.SignalBoardService;
+import com.signal.Signal.service.SignalCodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -29,7 +30,7 @@ public class SignalSocketHandler extends TextWebSocketHandler {
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final Client geminiClient;
     private final SignalBoardService signalBoardService;
-    private final AtomicLong lastDiagramTime = new AtomicLong(0);
+    private final SignalCodeService signalCodeService;
 
     @Value("${google.cloud.project-id}")
     private String projectId;
@@ -37,18 +38,24 @@ public class SignalSocketHandler extends TextWebSocketHandler {
     private byte[] audioBuffer = new byte[0];
     private static final int BUFFER_THRESHOLD = 60000;
 
+    private final AtomicLong lastDiagramTime = new AtomicLong(0);
+    private final AtomicLong lastCodeTime = new AtomicLong(0);
+
+
     public SignalSocketHandler(ObjectMapper objectMapper,
                                Client geminiClient,
-                               @Lazy SignalBoardService signalBoardService) {
+                               @Lazy SignalBoardService signalBoardService,
+                               @Lazy SignalCodeService signalCodeService) {
         this.objectMapper = objectMapper;
         this.geminiClient = geminiClient;
         this.signalBoardService = signalBoardService;
+        this.signalCodeService = signalCodeService;
     }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
-        log.info("🔌 Engineer connected: " + session.getId());
+        log.info("Engineer connected: " + session.getId());
 
         SignalResponse welcome = SignalResponse.builder()
                 .type(SignalResponse.SignalType.IDLE)
@@ -64,7 +71,7 @@ public class SignalSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         sessions.remove(session);
-        log.info("🔌 Engineer disconnected: " + session.getId());
+        log.info("Engineer disconnected: " + session.getId());
     }
 
     @Override
@@ -147,7 +154,6 @@ public class SignalSocketHandler extends TextWebSocketHandler {
             GenerateContentResponse response;
 
             try {
-                // 1. Try Gemini 3 Pro
                 response = geminiClient.models.generateContent(
                         "gemini-3-pro-preview",
                         userContent,
@@ -156,7 +162,6 @@ public class SignalSocketHandler extends TextWebSocketHandler {
             } catch (Exception e) {
                 if (e.getMessage().contains("429") || e.getMessage().contains("Resource exhausted") || e.getMessage().contains("404")) {
                     log.warn("Gemini 3 Pro Issue (" + e.getMessage() + "). Switching to Flash...");
-                    // 2. Fallback to Gemini 3 Flash
                     response = geminiClient.models.generateContent(
                             "gemini-3-flash-preview",
                             userContent,
@@ -181,21 +186,32 @@ public class SignalSocketHandler extends TextWebSocketHandler {
                     if (signal.getType() == SignalResponse.SignalType.DECISION_POINT) {
 
                         String desc = signal.getDescription().toLowerCase();
+                        long now = System.currentTimeMillis();
+
 
                         if (desc.contains("architecture") || desc.contains("design") ||
                                 desc.contains("structure") || desc.contains("flow") || desc.contains("diagram")) {
 
-                            long now = System.currentTimeMillis();
-
-
                             if (now - lastDiagramTime.get() > 15000) {
                                 lastDiagramTime.set(now);
-
-                                log.info("Triggering Nano Banana Pro (Single Call)...");
+                                log.info("Triggering Visual Agent...");
                                 signalBoardService.generateDiagram(session, signal.getDescription());
-
                             } else {
-                                log.info("Skipping duplicate trigger (Cooldown active)");
+                                log.info("Visual Agent Cool-down Active");
+                            }
+                        }
+
+
+                        if (desc.contains("json") || desc.contains("database") || desc.contains("api") ||
+                                desc.contains("field") || desc.contains("entity") || desc.contains("class") ||
+                                desc.contains("function") || desc.contains("code")) {
+
+                            if (now - lastCodeTime.get() > 10000) {
+                                lastCodeTime.set(now);
+                                log.info("Triggering Code Agent...");
+                                signalCodeService.generateLiveCode(session, signal.getDescription());
+                            } else {
+                                log.info("Code Agent Cool-down Active");
                             }
                         }
                     }

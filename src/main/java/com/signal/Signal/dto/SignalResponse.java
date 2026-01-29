@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -26,12 +27,15 @@ public class SignalResponse {
 
     private String imageBase64;
 
+    private Map<String, String> codeSnippets;
+
     public enum SignalType {
         DECISION_POINT,
         INPUT_REQUIRED,
         RISK_DETECTED,
         CONTRADICTION,
         IDLE,
-        IMAGE_GENERATED
+        IMAGE_GENERATED,
+        CODE_GENERATED
     }
 }
